@@ -126,18 +126,92 @@
 
 ---
 
-## /check 명령
+## 커맨드 사용 규칙
+
+프로젝트는 아래 3개의 단축 커맨드를 지원합니다. 각 커맨드는 복수의 에이전트를 순서대로 자동 호출하는 워크플로우입니다.
+
+---
+
+### /plan [아이디어]
+
+> 스킬: `command-plan`
+
+기획과 설계를 자동으로 완료합니다.
+
+```
+/plan 중고거래 플랫폼을 만들고 싶어
+```
+
+**실행 순서:**
+1. `planner` 에이전트 → 요구사항 분석 및 `docs/PLAN.md` 작성
+2. `architect` 에이전트 → 기술 스택, DB 구조 설계 및 `docs/ARCHITECTURE.md` 작성
+3. 설계 요약본을 사용자에게 보고
+
+**선행 조건:** 없음 (첫 시작점)
+**산출물:** `docs/PLAN.md`, `docs/ARCHITECTURE.md`
+
+---
+
+### /develop
+
+> 스킬: `command-develop`
+
+`docs/PLAN.md`를 기반으로 코드 구현과 문서화를 일괄 진행합니다.
+
+```
+/develop
+```
+
+**실행 순서:**
+1. `developer` 에이전트 → `korean-comment` + `clean-architecture-rule` 스킬 강제 적용하여 코드 구현
+2. `doc-writer` 에이전트 → 관련 API 문서 최신화
+
+**선행 조건:** `docs/PLAN.md` ✅, `docs/ARCHITECTURE.md` ✅
+**산출물:** `src/` 전체 레이어, 최신화된 API 문서
+
+---
+
+### /check
+
+> 스킬: `command-check`
+
+품질 검수를 실행하고 구현율 리포트를 생성합니다.
 
 ```
 /check
 ```
 
-`qa` 에이전트를 즉시 호출하여 아래를 수행합니다:
+**실행 순서:**
+1. `qa` 에이전트 → `docs/PLAN.md`와 현재 코드 비교 분석
+2. `qa-checklist` 스킬 기준 0~100% 구현율 점수 산출
+3. 발견된 버그 및 미구현 기능을 우선순위별로 정리하여 `docs/QA_REPORT.md` 저장
 
-1. `docs/PLAN.md` 요구사항 파싱
-2. 전체 코드 탐색 및 기능별 구현 상태 분류
-3. 구현율 0~100% 점수 산출
-4. `docs/QA_REPORT.md` 리포트 저장
+**선행 조건:** `docs/PLAN.md` ✅, 구현 코드 ✅
+**산출물:** `docs/QA_REPORT.md`
+
+---
+
+### 커맨드 실행 흐름 요약
+
+```
+/plan [아이디어]          /develop              /check
+      │                       │                    │
+      ▼                       ▼                    ▼
+  planner ──────────►  developer ──────────►  qa
+      │               (korean-comment          │
+      ▼               clean-architecture-rule) ▼
+  architect               │               QA_REPORT.md
+      │               doc-writer
+      ▼
+  PLAN.md +
+  ARCHITECTURE.md
+```
+
+| 커맨드 | 선행 조건 | 소요 에이전트 | 주요 산출물 |
+|--------|----------|-------------|-----------|
+| `/plan` | 없음 | planner + architect | PLAN.md, ARCHITECTURE.md |
+| `/develop` | PLAN.md + ARCHITECTURE.md | developer + doc-writer | src/, API 문서 |
+| `/check` | PLAN.md + 코드 | qa | QA_REPORT.md |
 
 ---
 
