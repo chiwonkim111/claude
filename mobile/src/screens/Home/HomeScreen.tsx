@@ -8,6 +8,9 @@
 import React, { useState, useCallback, useEffect, memo } from 'react'
 import { View, Text, ScrollView, StyleSheet, RefreshControl } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { useNavigation } from '@react-navigation/native'
+import { NavigationProp } from '@react-navigation/native'
+import { RootStackParamList } from '@/navigation/types'
 
 import Card from '@/components/Card/Card'
 import Button from '@/components/Button/Button'
@@ -25,6 +28,7 @@ import { getAchievements } from '@/api/achievement.api'
 import { colors, typography, spacing } from '@/styles/tokens'
 
 const HomeScreen: React.FC = memo(() => {
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>()
   const user = useAuthStore((s) => s.user)
   const { profile, setProfile } = useProfileStore()
   const setSession = useCheckinStore((s) => s.setSession)
@@ -68,8 +72,9 @@ const HomeScreen: React.FC = memo(() => {
     setIsCheckinLoading(true)
     try {
       const res = await createSession() as any
-      setSession(res.data)
-      setToast({ type: 'success', message: `${year}년 ${quarter} 체크인이 시작됐어요!` })
+      const session = res.data
+      setSession(session)
+      navigation.navigate('Checkin', { sessionId: session.id })
     } catch (error: unknown) {
       const code = (error as any)?.response?.data?.error?.code
       setToast({

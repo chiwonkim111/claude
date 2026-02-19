@@ -17,6 +17,7 @@ import HomeScreen from '@/screens/Home/HomeScreen'
 import TimelineScreen from '@/screens/Timeline/TimelineScreen'
 import MarketValueScreen from '@/screens/MarketValue/MarketValueScreen'
 import ProfileScreen from '@/screens/Profile/ProfileScreen'
+import CheckinScreen from '@/screens/Checkin/CheckinScreen'
 
 import { RootStackParamList, AuthStackParamList, MainTabParamList } from './types'
 
@@ -71,7 +72,19 @@ const AppNavigator = memo(() => {
   return (
     <RootStack.Navigator screenOptions={{ headerShown: false }}>
       {isLoggedIn ? (
-        <RootStack.Screen name="Main" component={MainTabNavigator} />
+        <>
+          <RootStack.Screen name="Main" component={MainTabNavigator} />
+          <RootStack.Screen
+            name="Checkin"
+            component={CheckinScreen}
+            options={{
+              headerShown: true,
+              title: '분기 체크인',
+              headerBackTitle: '취소',
+              presentation: 'modal',
+            }}
+          />
+        </>
       ) : (
         <RootStack.Screen name="Auth" component={AuthNavigator} />
       )}

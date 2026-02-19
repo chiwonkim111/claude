@@ -6,6 +6,7 @@
 export type RootStackParamList = {
   Auth: undefined
   Main: undefined
+  Checkin: { sessionId: number }
 }
 
 export type AuthStackParamList = {
