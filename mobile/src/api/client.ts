@@ -5,6 +5,9 @@
  */
 import axios, { AxiosInstance, InternalAxiosRequestConfig } from 'axios'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { findDemoResponse } from './demo-responses'
+
+const DEMO_MODE = process.env.EXPO_PUBLIC_DEMO_MODE === 'true'
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000'
 
@@ -76,5 +79,22 @@ apiClient.interceptors.response.use(
     return Promise.reject(error)
   },
 )
+
+/** 데모 모드 인터셉터 — 백엔드 없이 목 데이터로 응답 */
+if (DEMO_MODE) {
+  apiClient.interceptors.response.use(
+    undefined,
+    (error) => {
+      // 네트워크 에러(백엔드 미실행) 시 목 데이터로 대체
+      if (!error.response) {
+        const method = error.config?.method ?? ''
+        const url = error.config?.url ?? ''
+        const mock = findDemoResponse(method, url)
+        if (mock) return Promise.resolve((mock as any).data)
+      }
+      return Promise.reject(error)
+    },
+  )
+}
 
 export default apiClient
