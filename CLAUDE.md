@@ -10,11 +10,11 @@
 ```
 .claude/
 ├── agents/
-│   ├── service_planner.md  → 서비스 기획 및 요구사항 정의
+│   ├── planner.md  → 서비스 기획 및 요구사항 정의
 │   ├── architect.md        → DB 스키마 / API 명세 / 폴더 구조 설계
 │   ├── designer.md         → GUI 컴포넌트 및 디자인 시스템 구현
 │   ├── developer.md        → 클린 아키텍처 기반 코드 구현
-│   └── qa_inspector.md     → 코드 품질 및 기획 일치성 검수
+│   └── qa.md     → 코드 품질 및 기획 일치성 검수
 └── skills/
     └── korean_comment.md   → 한국어 주석 작성 규칙 (전 에이전트 공통 적용)
 ```
@@ -26,14 +26,14 @@
 모든 작업은 아래 순서를 따릅니다. 단계를 건너뛰지 않습니다.
 
 ```
-1. service-planner  →  기획 및 요구사항 정의  →  docs/PLAN.md
+1. planner  →  기획 및 요구사항 정의  →  docs/PLAN.md
         ↓
 2. architect        →  시스템 설계            →  docs/ARCHITECTURE.md
         ↓
 3. designer         →  GUI / 컴포넌트 구현    →  src/components/
    developer        →  비즈니스 로직 구현     →  src/
         ↓
-4. qa-inspector     →  검수 및 구현율 산출    →  docs/QA_REPORT.md
+4. qa     →  검수 및 구현율 산출    →  docs/QA_REPORT.md
 ```
 
 > designer와 developer는 3단계에서 병렬로 작업할 수 있습니다.
@@ -43,7 +43,7 @@
 
 ## 에이전트별 역할 및 호출 규칙
 
-### 1. service-planner
+### 1. planner
 - **역할**: 서비스 기획, 사용자 스토리, PRD 작성
 - **입력**: 사용자 아이디어 또는 요구사항
 - **출력**: `docs/PLAN.md`
@@ -77,7 +77,7 @@
   - SOLID 원칙 준수
   - 구현 완료 후 `docs/PLAN.md` 체크박스 업데이트
 
-### 5. qa-inspector
+### 5. qa
 - **역할**: 기획서와 코드 비교 분석, 구현율 산출, QA 리포트 작성
 - **입력**: `docs/PLAN.md`, `docs/ARCHITECTURE.md`, 전체 소스코드
 - **출력**: `docs/QA_REPORT.md`
@@ -104,9 +104,9 @@
 
 | 문서 | 담당 에이전트 | 수정 시점 |
 |------|-------------|----------|
-| `docs/PLAN.md` | service-planner | 기획 변경 또는 기능 구현 완료 시 |
+| `docs/PLAN.md` | planner | 기획 변경 또는 기능 구현 완료 시 |
 | `docs/ARCHITECTURE.md` | architect | 설계 변경 시 |
-| `docs/QA_REPORT.md` | qa-inspector | `/check` 실행 시 |
+| `docs/QA_REPORT.md` | qa | `/check` 실행 시 |
 
 - 모든 문서는 상단에 **변경 이력** 테이블을 유지합니다.
 - 문서를 덮어쓰지 않고 해당 섹션만 수정합니다.
@@ -132,7 +132,7 @@
 /check
 ```
 
-`qa-inspector` 에이전트를 즉시 호출하여 아래를 수행합니다:
+`qa` 에이전트를 즉시 호출하여 아래를 수행합니다:
 
 1. `docs/PLAN.md` 요구사항 파싱
 2. 전체 코드 탐색 및 기능별 구현 상태 분류
@@ -143,7 +143,7 @@
 
 ## 주의사항
 
-- `docs/PLAN.md` 없이 architect, developer, designer, qa-inspector를 호출하지 않습니다.
+- `docs/PLAN.md` 없이 architect, developer, designer, qa를 호출하지 않습니다.
 - `docs/ARCHITECTURE.md` 없이 developer, designer를 호출하지 않습니다.
 - 에이전트가 산출물을 저장할 때 기존 파일을 통째로 덮어쓰지 않습니다.
 - 모든 에이전트는 작업 완료 후 반드시 저장된 파일 목록을 사용자에게 보고합니다.

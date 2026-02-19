@@ -1,6 +1,6 @@
 ---
 name: priority-framework
-description: MoSCoW 분류와 RICE 점수를 활용한 기능 우선순위 산정 스킬. service-planner 에이전트가 기능 목록의 우선순위를 결정할 때 사용합니다.
+description: MoSCoW 분류와 RICE 점수를 활용한 기능 우선순위 산정 스킬. planner 에이전트가 기능 목록의 우선순위를 결정할 때 사용합니다.
 ---
 
 기능 우선순위를 결정할 때 아래 두 프레임워크를 함께 사용합니다.

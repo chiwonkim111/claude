@@ -1,6 +1,6 @@
 ---
 name: qa-checklist
-description: QA 검수 체크리스트 스킬. qa-inspector 에이전트가 /check 명령 실행 시 기능, 성능, 보안, 접근성 항목을 체계적으로 검수할 때 사용합니다.
+description: QA 검수 체크리스트 스킬. qa 에이전트가 /check 명령 실행 시 기능, 성능, 보안, 접근성 항목을 체계적으로 검수할 때 사용합니다.
 ---
 
 `/check` 명령 실행 시 아래 체크리스트를 순서대로 적용하여 검수합니다.

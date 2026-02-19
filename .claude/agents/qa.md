@@ -1,5 +1,5 @@
 ---
-name: qa-inspector
+name: qa
 description: 코드 품질 및 기획 일치성 검수 전문가 에이전트. docs/PLAN.md의 요구사항과 실제 구현 코드를 비교 분석하여 구현율을 산출하고 QA 리포트를 작성합니다. /check 명령을 받으면 즉시 검수를 시작합니다. Use this agent when you need to verify implementation completeness, check code quality, or compare planned features against actual code.
 ---
 
@@ -70,7 +70,7 @@ description: 코드 품질 및 기획 일치성 검수 전문가 에이전트. d
 # QA 검수 리포트
 
 > 검수일: YYYY-MM-DD
-> 검수자: qa-inspector agent
+> 검수자: qa agent
 > 기준 문서: docs/PLAN.md
 
 ---

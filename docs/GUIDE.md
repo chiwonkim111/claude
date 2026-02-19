@@ -43,7 +43,7 @@
 claude
 
 # 2. 서비스 기획 시작
-@service-planner 새로운 중고거래 플랫폼을 기획해줘.
+@planner 새로운 중고거래 플랫폼을 기획해줘.
 
 # 3. 아키텍처 설계
 @architect docs/PLAN.md를 기반으로 DB 스키마와 API를 설계해줘.
@@ -66,11 +66,11 @@ claude
 
 | 에이전트 | 호출 방법 | 한 줄 역할 |
 |---------|----------|----------|
-| **service-planner** | `@service-planner` | 서비스 기획 및 PRD 작성 |
+| **planner** | `@planner` | 서비스 기획 및 PRD 작성 |
 | **architect** | `@architect` | DB 스키마 · API · 폴더 구조 설계 |
 | **designer** | `@designer` | GUI 컴포넌트 및 디자인 시스템 구현 |
 | **developer** | `@developer` | 클린 아키텍처 기반 코드 구현 |
-| **qa-inspector** | `@qa-inspector` 또는 `/check` | 기획-코드 일치성 검수 및 QA 리포트 |
+| **qa** | `@qa` 또는 `/check` | 기획-코드 일치성 검수 및 QA 리포트 |
 | **doc-writer** | `@doc-writer` | 기술 문서 및 사용자 가이드 작성 |
 
 ---
@@ -95,10 +95,10 @@ claude
 
 | 단계 | 에이전트 | 필요한 선행 문서 |
 |------|---------|----------------|
-| 1. 기획 | service-planner | 없음 (첫 시작) |
+| 1. 기획 | planner | 없음 (첫 시작) |
 | 2. 설계 | architect | `docs/PLAN.md` ✅ |
 | 3. 구현 | designer / developer | `docs/PLAN.md` ✅ `docs/ARCHITECTURE.md` ✅ |
-| 4. 검수 | qa-inspector | `docs/PLAN.md` ✅ 구현 코드 ✅ |
+| 4. 검수 | qa | `docs/PLAN.md` ✅ 구현 코드 ✅ |
 
 > ⚠️ 선행 문서 없이 다음 단계 에이전트를 호출하면, 에이전트가 먼저 이전 단계를 완료할 것을 안내합니다.
 
@@ -106,7 +106,7 @@ claude
 
 ## 4. 에이전트별 사용 방법
 
-### 4-1. service-planner — 서비스 기획
+### 4-1. planner — 서비스 기획
 
 **역할**: 사용자 아이디어를 PRD로 구체화합니다.
 
@@ -114,11 +114,11 @@ claude
 
 **사용 예시**:
 ```
-@service-planner 배달 중개 앱을 기획해줘.
+@planner 배달 중개 앱을 기획해줘.
 
-@service-planner 기존 PLAN.md에 '즐겨찾기' 기능을 추가해줘.
+@planner 기존 PLAN.md에 '즐겨찾기' 기능을 추가해줘.
 
-@service-planner 사용자 페르소나를 더 구체적으로 다듬어줘.
+@planner 사용자 페르소나를 더 구체적으로 다듬어줘.
 ```
 
 **적용 스킬**:
@@ -194,7 +194,7 @@ claude
 
 ---
 
-### 4-5. qa-inspector — QA 검수
+### 4-5. qa — QA 검수
 
 **역할**: `docs/PLAN.md`와 실제 코드를 비교하여 구현율을 산출하고 리포트를 작성합니다.
 
@@ -206,7 +206,7 @@ claude
 /check
 
 # 방법 2: 에이전트 호출
-@qa-inspector 현재 구현 상태를 검수해줘.
+@qa 현재 구현 상태를 검수해줘.
 ```
 
 **적용 스킬**:
@@ -246,7 +246,7 @@ claude
 |------|------|
 | `korean-comment` | 모든 코드에 한국어 주석 작성 (파일 상단·클래스·함수 필수) |
 
-### service-planner 스킬
+### planner 스킬
 
 | 스킬 | 설명 |
 |------|------|
@@ -278,7 +278,7 @@ claude
 | `clean-architecture-rule` | 4개 레이어 구현 규칙, Entity/UseCase/Repository 패턴, DI 원칙 |
 | `test-convention` | AAA 패턴, describe/it 네이밍, Mock 작성, 커버리지 기준 |
 
-### qa-inspector 스킬
+### qa 스킬
 
 | 스킬 | 설명 |
 |------|------|
@@ -293,14 +293,14 @@ claude
 ```
 /check
 ```
-`qa-inspector` 에이전트를 즉시 호출하여 전체 검수를 실행하고 `docs/QA_REPORT.md`를 생성합니다.
+`qa` 에이전트를 즉시 호출하여 전체 검수를 실행하고 `docs/QA_REPORT.md`를 생성합니다.
 
 ### 특정 에이전트 호출
 ```
 @{에이전트명} {요청 내용}
 
 예시:
-@service-planner 결제 기능을 추가 기획해줘.
+@planner 결제 기능을 추가 기획해줘.
 @architect 결제 테이블 스키마를 추가해줘.
 @developer 결제 UseCase를 구현해줘.
 @designer 결제 화면 컴포넌트를 만들어줘.
@@ -323,9 +323,9 @@ claude
 ├── CLAUDE.md                  ← 에이전트 운영 규칙 (자동 로드)
 │
 ├── docs/                      ← 모든 문서 산출물
-│   ├── PLAN.md                ← service-planner 산출물 (PRD)
+│   ├── PLAN.md                ← planner 산출물 (PRD)
 │   ├── ARCHITECTURE.md        ← architect 산출물 (DB·API·폴더 구조)
-│   ├── QA_REPORT.md           ← qa-inspector 산출물 (검수 리포트)
+│   ├── QA_REPORT.md           ← qa 산출물 (검수 리포트)
 │   └── GUIDE.md               ← doc-writer 산출물 (이 파일)
 │
 ├── src/                       ← developer / designer 산출물
@@ -338,11 +338,11 @@ claude
 │
 └── .claude/
     ├── agents/                ← 에이전트 정의 파일
-    │   ├── service_planner.md
+    │   ├── planner.md
     │   ├── architect.md
     │   ├── designer.md
     │   ├── developer.md
-    │   ├── qa_inspector.md
+    │   ├── qa.md
     │   └── doc_writer.md
     └── skills/                ← 스킬 정의 파일 (12개)
         ├── korean_comment.md
@@ -367,7 +367,7 @@ claude
 ## 8. FAQ
 
 **Q. 에이전트를 호출했는데 "PLAN.md가 없다"고 합니다.**
-> A. 개발 사이클 순서를 지켜야 합니다. 먼저 `@service-planner`로 기획을 완료하고 `docs/PLAN.md`가 생성된 후 다음 단계로 진행하세요.
+> A. 개발 사이클 순서를 지켜야 합니다. 먼저 `@planner`로 기획을 완료하고 `docs/PLAN.md`가 생성된 후 다음 단계로 진행하세요.
 
 **Q. `/check` 결과 구현율이 낮게 나옵니다.**
 > A. `docs/PLAN.md`에 정의된 기능 중 아직 구현되지 않은 항목이 있습니다. QA 리포트의 `MISSING` 항목을 확인하고 `@developer` 또는 `@designer`에게 구현을 요청하세요.
@@ -382,4 +382,4 @@ claude
 > A. `.claude/agents/` 또는 `.claude/skills/` 폴더에 마크다운 파일을 추가하고 `CLAUDE.md`에 에이전트 역할과 호출 조건을 등록하세요.
 
 **Q. 여러 에이전트가 같은 파일을 수정하면 충돌이 나지 않나요?**
-> A. 각 에이전트는 담당 섹션만 수정하도록 설계되어 있습니다. `docs/PLAN.md`는 service-planner와 developer(구현 완료 체크박스)만 수정하고, 나머지 문서도 담당 에이전트가 명확히 분리되어 있습니다.
+> A. 각 에이전트는 담당 섹션만 수정하도록 설계되어 있습니다. `docs/PLAN.md`는 planner와 developer(구현 완료 체크박스)만 수정하고, 나머지 문서도 담당 에이전트가 명확히 분리되어 있습니다.

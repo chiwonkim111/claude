@@ -1,6 +1,6 @@
 ---
 name: prd-template
-description: PRD(Product Requirements Document) 작성 시 사용하는 표준 템플릿 스킬. service-planner 에이전트가 docs/PLAN.md를 작성할 때 이 구조를 따릅니다.
+description: PRD(Product Requirements Document) 작성 시 사용하는 표준 템플릿 스킬. planner 에이전트가 docs/PLAN.md를 작성할 때 이 구조를 따릅니다.
 ---
 
 PRD를 작성할 때 아래 표준 템플릿 구조를 반드시 따릅니다.
@@ -12,7 +12,7 @@ PRD를 작성할 때 아래 표준 템플릿 구조를 반드시 따릅니다.
 
 > 버전: v1.0
 > 최종 수정일: YYYY-MM-DD
-> 작성자: service-planner agent
+> 작성자: planner agent
 
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: bug-report-template
-description: 버그 리포트 작성 템플릿 스킬. qa-inspector 에이전트가 검수 중 발견한 이슈를 일관된 형식으로 docs/QA_REPORT.md에 기록할 때 사용합니다.
+description: 버그 리포트 작성 템플릿 스킬. qa 에이전트가 검수 중 발견한 이슈를 일관된 형식으로 docs/QA_REPORT.md에 기록할 때 사용합니다.
 ---
 
 검수 중 버그 또는 이슈를 발견하면 아래 템플릿과 분류 기준을 따라 기록합니다.

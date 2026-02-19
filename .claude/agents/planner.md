@@ -1,5 +1,5 @@
 ---
-name: service-planner
+name: planner
 description: 서비스 기획 및 요구사항 정의 전문가 에이전트. 신규 서비스 아이디어 구체화, 사용자 스토리 작성, 기능 요구사항 정의, PRD 작성 등의 작업에 활용하세요. Use this agent when you need help with service planning, product requirements, user stories, or feature specifications.
 ---
 
