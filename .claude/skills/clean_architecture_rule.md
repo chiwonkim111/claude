@@ -1,261 +1,271 @@
 ---
-name: clean-architecture-rule
-description: 클린 아키텍처 레이어별 구현 규칙 스킬. developer 에이전트가 각 레이어의 역할, 의존성 방향, 구현 패턴을 일관되게 적용할 때 사용합니다.
+name: supabase-pattern
+description: Supabase BaaS 아키텍처 구현 패턴 스킬. developer 에이전트가 Supabase 클라이언트, RLS, Edge Function, API 레이어를 일관되게 구현할 때 사용합니다.
 ---
 
-코드를 구현할 때 아래 클린 아키텍처 규칙을 반드시 따릅니다.
+Supabase 기반 코드를 구현할 때 아래 패턴을 반드시 따릅니다.
 
-## 레이어 구조 및 의존성
+## 아키텍처 레이어 및 역할
 
 ```
 ┌─────────────────────────────────┐
-│       Presentation Layer        │  Controller, Router, Request/Response DTO
+│     Screen / Component          │  UI 렌더링, 로딩·에러 상태 표시
 ├─────────────────────────────────┤
-│       Application Layer         │  UseCase, Command, Query, Application DTO
+│       Zustand Store             │  전역 상태 (auth, profile, checkin)
 ├─────────────────────────────────┤
-│         Domain Layer            │  Entity, ValueObject, Repository Interface, Domain Event
+│        API Layer                │  src/api/*.api.ts — Supabase 쿼리 함수
 ├─────────────────────────────────┤
-│      Infrastructure Layer       │  Repository Impl, ORM, External API, Config
+│      Supabase Client            │  src/api/supabase.ts — 싱글턴 인스턴스
+├─────────────────────────────────┤
+│     Supabase Backend            │  Auth · PostgreSQL(RLS) · Edge Functions
 └─────────────────────────────────┘
 
-의존성 방향: Presentation → Application → Domain ← Infrastructure
+의존성 방향: Screen → Store → API → Supabase Client → Backend
 ```
 
-**핵심 원칙**: Domain Layer는 어떤 외부 레이어도 import하지 않습니다.
+**핵심 원칙**: Screen에서 Supabase 클라이언트를 직접 호출하지 않습니다. 반드시 `src/api/` 레이어를 통해서만 접근합니다.
 
 ---
 
-## Domain Layer 규칙
-
-### Entity
-- 고유 식별자(`id`)를 가진 비즈니스 핵심 객체입니다.
-- 비즈니스 규칙과 불변식(Invariant)을 내부에 캡슐화합니다.
-- ORM 모델이나 DB 구조에 의존하지 않습니다.
-- 상태 변경은 반드시 메서드를 통해서만 수행합니다.
+## Supabase Client 싱글턴
 
 ```typescript
-// ✅ 올바른 Entity 예시
-export class User {
-  private constructor(
-    private readonly _id: string,
-    private _email: Email,           // Value Object
-    private _nickname: string,
-    private _status: UserStatus,
-    private readonly _createdAt: Date,
-  ) {}
+// src/api/supabase.ts
+import { createClient } from '@supabase/supabase-js'
+import { Database } from '@/types/supabase'
 
-  static create(email: string, nickname: string): User {
-    // 비즈니스 규칙 검증
-    if (!email || !nickname) throw new InvalidUserException('필수값 누락')
-    return new User(
-      generateId(),
-      new Email(email),
-      nickname,
-      UserStatus.ACTIVE,
-      new Date(),
-    )
-  }
+const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL!
+const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!
 
-  // 상태 변경 메서드 (직접 필드 수정 금지)
-  suspend(): void {
-    if (this._status === UserStatus.DELETED) {
-      throw new InvalidUserException('삭제된 사용자는 정지할 수 없습니다.')
+/** Supabase 클라이언트 싱글턴 — 앱 전체에서 이 인스턴스만 사용 */
+export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+  },
+})
+```
+
+---
+
+## API 레이어 패턴 (src/api/*.api.ts)
+
+### 기본 CRUD 패턴
+
+```typescript
+// src/api/profile.api.ts
+import { supabase } from './supabase'
+
+/** 현재 로그인 유저의 프로필 조회 (RLS: 본인만 조회 가능) */
+export const getProfile = () =>
+  supabase
+    .from('profiles')
+    .select('*, profile_skills(*, skills(id, name, category))')
+    .single()
+
+/** 프로필 정보 업데이트 */
+export const updateProfile = async (updates: ProfileUpdate) => {
+  const { data: { user } } = await supabase.auth.getUser()
+  return supabase
+    .from('profiles')
+    .update(updates)
+    .eq('user_id', user!.id)
+    .select()
+    .single()
+}
+```
+
+### 에러 처리 패턴
+
+```typescript
+// ✅ 올바른 예: { data, error } 구조 유지
+export const getAchievements = () =>
+  supabase
+    .from('achievements')
+    .select('*')
+    .is('deleted_at', null)
+    .order('started_at', { ascending: false })
+
+// Screen에서 호출 시
+const { data, error } = await getAchievements()
+if (error) throw error
+setAchievements(data ?? [])
+
+// ❌ 잘못된 예: API 레이어에서 에러를 삼켜버림
+export const getAchievements = async () => {
+  try {
+    const { data } = await supabase.from('achievements').select('*')
+    return data  // error 정보 손실
+  } catch { return [] }
+}
+```
+
+### RPC (PostgreSQL 함수) 호출 패턴
+
+```typescript
+/** 체크인 세션 생성 — SECURITY DEFINER RPC로 질문 자동 삽입 */
+export const createSession = async () => {
+  const now = new Date()
+  const quarter = `Q${Math.ceil((now.getMonth() + 1) / 3)}` as CheckinQuarter
+  const year = now.getFullYear()
+
+  const { data, error } = await supabase.rpc('create_checkin_session', {
+    p_quarter: quarter,
+    p_year: year,
+  })
+
+  if (error) return { data: null, error }
+
+  // RETURNS SETOF 함수는 배열로 반환
+  const session = Array.isArray(data) ? data[0] : data
+  return { data: session, error: null }
+}
+```
+
+### Edge Function 호출 패턴
+
+```typescript
+/** AI 마켓밸류 계산 — 서버 사이드 처리 (Edge Function) */
+export const calculateMarketValue = () =>
+  supabase.functions.invoke('calculate-market-value', { body: {} })
+```
+
+---
+
+## Zustand Store 패턴 (src/stores/*.store.ts)
+
+```typescript
+// src/stores/auth.store.ts
+import { create } from 'zustand'
+import { supabase } from '@/api/supabase'
+import { User, Session } from '@supabase/supabase-js'
+
+interface AuthStore {
+  user: User | null
+  session: Session | null
+  isLoggedIn: boolean
+  setUser: (user: User | null) => void
+  setSession: (session: Session | null) => void
+  restoreAuth: () => Promise<void>
+  signOut: () => Promise<void>
+}
+
+export const useAuthStore = create<AuthStore>((set) => ({
+  user: null,
+  session: null,
+  isLoggedIn: false,
+
+  setUser: (user) => set({ user, isLoggedIn: !!user }),
+  setSession: (session) => set({ session, user: session?.user ?? null, isLoggedIn: !!session }),
+
+  /** 앱 시작 시 저장된 세션 복원 */
+  restoreAuth: async () => {
+    const { data: { session } } = await supabase.auth.getSession()
+    set({ session, user: session?.user ?? null, isLoggedIn: !!session })
+  },
+
+  signOut: async () => {
+    await supabase.auth.signOut()
+    set({ user: null, session: null, isLoggedIn: false })
+  },
+}))
+```
+
+---
+
+## Supabase 인증 패턴
+
+```typescript
+// src/api/auth.api.ts
+
+/** 이메일/비밀번호 로그인 */
+export const signIn = (email: string, password: string) =>
+  supabase.auth.signInWithPassword({ email, password })
+
+/** 회원가입 */
+export const signUp = (email: string, password: string, fullName: string) =>
+  supabase.auth.signUp({
+    email,
+    password,
+    options: { data: { full_name: fullName } },
+  })
+
+/** 로그아웃 */
+export const signOut = () => supabase.auth.signOut()
+
+/** 현재 세션 조회 */
+export const getSession = () => supabase.auth.getSession()
+```
+
+---
+
+## RLS 정책 설계 원칙
+
+```sql
+-- 패턴 1: 본인 데이터만 접근
+CREATE POLICY "테이블: 본인 SELECT"
+  ON public.테이블 FOR SELECT TO authenticated
+  USING (user_id = auth.uid());
+
+-- 패턴 2: 관계 테이블 (profiles.id 경유)
+CREATE POLICY "profile_skills: 본인 INSERT"
+  ON public.profile_skills FOR INSERT TO authenticated
+  WITH CHECK (
+    profile_id IN (SELECT id FROM public.profiles WHERE user_id = auth.uid())
+  );
+
+-- 패턴 3: SECURITY DEFINER RPC로 RLS 우회 (AI가 삽입하는 경우)
+CREATE OR REPLACE FUNCTION create_checkin_session(p_quarter checkin_quarter, p_year int)
+RETURNS SETOF checkin_sessions
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  -- RLS 우회하여 관련 레코드 생성 가능
+  INSERT INTO checkin_questions ...
+  RETURN QUERY SELECT * FROM checkin_sessions WHERE ...;
+END;
+$$;
+```
+
+---
+
+## Screen 구현 원칙
+
+```typescript
+const HomeScreen: React.FC = memo(() => {
+  // ─── 상태 ──────────────────────────────────────────
+  const user = useAuthStore((s) => s.user)
+  const [data, setData] = useState<DataType[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [toast, setToast] = useState<ToastState | null>(null)
+
+  // ─── 데이터 로드 ───────────────────────────────────
+  const loadData = useCallback(async () => {
+    try {
+      const { data: result, error } = await getData()
+      if (error) throw error
+      setData(result ?? [])
+    } catch {
+      setToast({ type: 'error', message: '데이터를 불러오지 못했습니다.' })
+    } finally {
+      setIsLoading(false)
     }
-    this._status = UserStatus.SUSPENDED
-  }
+  }, [])
 
-  get id(): string { return this._id }
-  get email(): string { return this._email.value }
-  get status(): UserStatus { return this._status }
-}
-```
+  useEffect(() => { loadData() }, [loadData])
 
-### Value Object
-- 식별자 없이 값 자체로 동일성을 판단하는 객체입니다.
-- 불변(Immutable)으로 구현합니다.
-- 자체 유효성 검사 로직을 포함합니다.
-
-```typescript
-export class Email {
-  private readonly _value: string
-
-  constructor(value: string) {
-    if (!this.isValid(value)) {
-      throw new InvalidEmailException(`올바르지 않은 이메일 형식: ${value}`)
-    }
-    this._value = value.toLowerCase()
-  }
-
-  private isValid(email: string): boolean {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-  }
-
-  get value(): string { return this._value }
-
-  equals(other: Email): boolean {
-    return this._value === other._value
-  }
-}
-```
-
-### Repository Interface
-- Domain Layer에 인터페이스만 정의합니다. 구현체는 Infrastructure에 위치합니다.
-
-```typescript
-export interface UserRepository {
-  findById(id: string): Promise<User | null>
-  findByEmail(email: string): Promise<User | null>
-  save(user: User): Promise<void>
-  delete(id: string): Promise<void>
-}
-```
-
-### Domain Exception
-```typescript
-export class InvalidUserException extends Error {
-  constructor(message: string) {
-    super(message)
-    this.name = 'InvalidUserException'
-  }
-}
-```
-
----
-
-## Application Layer 규칙
-
-### UseCase
-- 하나의 UseCase는 하나의 비즈니스 유스케이스만 처리합니다.
-- Repository는 생성자 주입(DI)으로 받습니다.
-- 트랜잭션 경계를 관리합니다.
-
-```typescript
-export class CreateUserUseCase {
-  constructor(
-    private readonly userRepository: UserRepository,      // 인터페이스 주입
-    private readonly passwordHasher: PasswordHasher,
-  ) {}
-
-  async execute(command: CreateUserCommand): Promise<CreateUserResult> {
-    // 1. 중복 검사
-    const exists = await this.userRepository.findByEmail(command.email)
-    if (exists) throw new UserEmailDuplicatedException(command.email)
-
-    // 2. 비밀번호 해시
-    const hashedPassword = await this.passwordHasher.hash(command.password)
-
-    // 3. 도메인 객체 생성
-    const user = User.create(command.email, command.nickname, hashedPassword)
-
-    // 4. 저장
-    await this.userRepository.save(user)
-
-    return { userId: user.id }
-  }
-}
-
-// Command DTO (입력)
-export interface CreateUserCommand {
-  email: string
-  nickname: string
-  password: string
-}
-
-// Result DTO (출력)
-export interface CreateUserResult {
-  userId: string
-}
-```
-
----
-
-## Infrastructure Layer 규칙
-
-### Repository 구현체
-- Domain의 Repository 인터페이스를 구현합니다.
-- ORM(TypeORM, Prisma 등) 또는 DB 쿼리를 직접 사용합니다.
-- Domain Entity ↔ ORM 모델 변환을 담당합니다.
-
-```typescript
-export class UserRepositoryImpl implements UserRepository {
-  constructor(private readonly dataSource: DataSource) {}
-
-  async findById(id: string): Promise<User | null> {
-    const record = await this.dataSource
-      .getRepository(UserEntity)
-      .findOne({ where: { id } })
-
-    if (!record) return null
-    return this.toDomain(record)   // ORM 모델 → Domain Entity 변환
-  }
-
-  async save(user: User): Promise<void> {
-    const entity = this.toEntity(user)   // Domain Entity → ORM 모델 변환
-    await this.dataSource.getRepository(UserEntity).save(entity)
-  }
-
-  // ORM 모델 → Domain Entity
-  private toDomain(record: UserEntity): User {
-    return User.reconstitute(record.id, record.email, record.nickname, record.status)
-  }
-
-  // Domain Entity → ORM 모델
-  private toEntity(user: User): UserEntity {
-    const entity = new UserEntity()
-    entity.id = user.id
-    entity.email = user.email
-    entity.nickname = user.nickname
-    entity.status = user.status
-    return entity
-  }
-}
-```
-
----
-
-## Presentation Layer 규칙
-
-### Controller
-- 요청을 받아 UseCase에 위임하고 응답을 반환합니다.
-- 비즈니스 로직을 포함하지 않습니다.
-- 입력 유효성 검사는 DTO 레벨에서 처리합니다.
-
-```typescript
-export class UserController {
-  constructor(private readonly createUserUseCase: CreateUserUseCase) {}
-
-  async createUser(req: Request, res: Response): Promise<void> {
-    const command: CreateUserCommand = {
-      email: req.body.email,
-      nickname: req.body.nickname,
-      password: req.body.password,
-    }
-
-    const result = await this.createUserUseCase.execute(command)
-
-    res.status(201).json({ success: true, data: result })
-  }
-}
-```
-
----
-
-## 의존성 주입(DI) 규칙
-
-- 구체 클래스가 아닌 **인터페이스에 의존**합니다.
-- 생성자 주입을 기본으로 사용합니다.
-- DI 컨테이너(NestJS의 `@Injectable`, tsyringe 등)를 활용합니다.
-
-```typescript
-// ❌ 잘못된 예: 구체 클래스에 의존
-class CreateUserUseCase {
-  private repo = new UserRepositoryImpl()  // 직접 생성 금지
-}
-
-// ✅ 올바른 예: 인터페이스에 의존
-class CreateUserUseCase {
-  constructor(private readonly userRepository: UserRepository) {}  // 인터페이스 주입
-}
+  // ─── 렌더 ──────────────────────────────────────────
+  return (
+    <View style={{ flex: 1 }}>
+      <ScrollView style={{ flex: 1 }}>
+        {isLoading ? <Skeleton /> : <Content data={data} />}
+      </ScrollView>
+      {toast && <Toast {...toast} onDismiss={() => setToast(null)} />}
+    </View>
+  )
+})
 ```
 
 ---
@@ -263,7 +273,30 @@ class CreateUserUseCase {
 ## 레이어 간 import 금지 규칙
 
 ```
-Domain    → 외부 레이어 import 금지 (Framework, ORM, HTTP 등)
-Application → Infrastructure import 금지
-Presentation → Domain 직접 접근 금지 (Application을 통해서만)
+Screen    → supabase 직접 import 금지 (반드시 API 레이어 경유)
+API Layer → Store import 금지 (단방향 의존성 유지)
+Store     → Screen import 금지
+```
+
+---
+
+## 자주 쓰는 Supabase 쿼리 패턴
+
+```typescript
+// 조건 필터
+supabase.from('table').select('*').eq('column', value)
+supabase.from('table').select('*').is('deleted_at', null)
+supabase.from('table').select('*').in('status', ['PENDING', 'IN_PROGRESS'])
+
+// 정렬 및 페이지네이션
+supabase.from('table').select('*').order('created_at', { ascending: false }).limit(10)
+
+// JOIN (외래키 관계)
+supabase.from('profile_skills').select('*, skills(id, name, category)')
+
+// UPSERT (있으면 업데이트, 없으면 삽입)
+supabase.from('profiles').upsert({ user_id: uid, ...data }, { onConflict: 'user_id' })
+
+// Soft Delete
+supabase.from('achievements').update({ deleted_at: new Date().toISOString() }).eq('id', id)
 ```
