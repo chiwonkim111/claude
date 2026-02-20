@@ -1,5 +1,4 @@
-# 의존성
-node_modules/
+# 의존성 (빌드 산출물 내 node_modules는 제외하지 않음)
 mobile/node_modules/
 backend/node_modules/
 
