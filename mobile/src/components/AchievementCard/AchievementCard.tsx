@@ -10,21 +10,20 @@ import { Ionicons } from '@expo/vector-icons'
 import Badge from '@/components/Badge/Badge'
 import { colors, typography, spacing, borderRadius, shadows } from '@/styles/tokens'
 
+/** Supabase achievements 테이블 컬럼 기준 */
 interface Achievement {
-  id: number
+  id: string
   title: string
   description?: string | null
-  projectName?: string | null
-  periodStart?: string | null
-  periodEnd?: string | null
-  isVerified: boolean
-  verificationCount: number
-  source: 'manual' | 'checkin' | 'ai_log'
+  project_name?: string | null
+  started_at?: string | null
+  ended_at?: string | null
+  is_verified: boolean
 }
 
 interface AchievementCardProps {
   achievement: Achievement
-  onPress?: (id: number) => void
+  onPress?: (id: string) => void
 }
 
 const AchievementCard = memo<AchievementCardProps>(({ achievement, onPress }) => {
@@ -33,7 +32,7 @@ const AchievementCard = memo<AchievementCardProps>(({ achievement, onPress }) =>
     return new Date(d).toLocaleDateString('ko-KR', { year: 'numeric', month: 'short' })
   }
 
-  const periodText = [formatDate(achievement.periodStart), formatDate(achievement.periodEnd)]
+  const periodText = [formatDate(achievement.started_at), formatDate(achievement.ended_at)]
     .filter(Boolean)
     .join(' ~ ')
 
@@ -48,35 +47,27 @@ const AchievementCard = memo<AchievementCardProps>(({ achievement, onPress }) =>
       {/* 상단 행: 제목 + 인증 아이콘 */}
       <View style={styles.topRow}>
         <Text style={styles.title} numberOfLines={2}>{achievement.title}</Text>
-        {achievement.isVerified && (
+        {achievement.is_verified && (
           <Ionicons name="shield-checkmark" size={20} color={colors.success} style={styles.verifiedIcon} />
         )}
       </View>
 
       {/* 프로젝트명 */}
-      {achievement.projectName && (
+      {achievement.project_name && (
         <Text style={styles.projectName} numberOfLines={1}>
-          <Ionicons name="folder-outline" size={12} color={colors.gray400} /> {achievement.projectName}
+          <Ionicons name="folder-outline" size={12} color={colors.gray400} /> {achievement.project_name}
         </Text>
       )}
 
       {/* 기간 */}
-      {periodText && (
-        <Text style={styles.period}>{periodText}</Text>
-      )}
+      {periodText ? <Text style={styles.period}>{periodText}</Text> : null}
 
-      {/* 하단 행: 출처 뱃지 + 인증 카운트 */}
+      {/* 하단 행: 인증 뱃지 */}
       <View style={styles.bottomRow}>
         <Badge
-          variant={achievement.source === 'checkin' ? 'primary' : 'gray'}
-          label={achievement.source === 'checkin' ? '체크인' : '직접 입력'}
+          variant={achievement.is_verified ? 'success' : 'gray'}
+          label={achievement.is_verified ? '인증완료' : '인증대기'}
         />
-        {achievement.verificationCount > 0 && (
-          <View style={styles.verifyCount}>
-            <Ionicons name="people" size={12} color={colors.success} />
-            <Text style={styles.verifyCountText}>{achievement.verificationCount}명 인증</Text>
-          </View>
-        )}
       </View>
     </TouchableOpacity>
   )

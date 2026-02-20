@@ -21,6 +21,9 @@
         "backgroundColor": "#6366F1"
       },
       "package": "com.remember.profilediary"
+    },
+    "web": {
+      "bundler": "metro"
     }
   }
 }

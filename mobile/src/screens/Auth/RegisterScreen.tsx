@@ -23,7 +23,7 @@ import Button from '@/components/Button/Button'
 import Toast from '@/components/Toast/Toast'
 
 import { useAuthStore } from '@/stores/auth.store'
-import { register, login } from '@/api/auth.api'
+import { register } from '@/api/auth.api'
 import { colors, typography, spacing } from '@/styles/tokens'
 import { AuthStackParamList } from '@/navigation/types'
 
@@ -33,7 +33,7 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 const RegisterScreen: React.FC = () => {
   const navigation = useNavigation<RegisterNav>()
-  const loginStore = useAuthStore((s) => s.login)
+  const setSession = useAuthStore((s) => s.setSession)
 
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -57,23 +57,27 @@ const RegisterScreen: React.FC = () => {
     if (!validate()) return
     setIsLoading(true)
     try {
-      await register({ name, email, password })
-      // 가입 후 자동 로그인
-      const res = await login({ email, password }) as any
-      await loginStore(res.data.user, res.data.accessToken)
-      setToast({ type: 'success', message: '회원가입이 완료됐습니다!' })
+      const { data, error } = await register({ name, email, password })
+      if (error) throw error
+      // Supabase: 이메일 인증 비활성화 시 session 즉시 반환, 활성화 시 null
+      if (data.session) {
+        setSession(data.session)
+        setToast({ type: 'success', message: '회원가입이 완료됐습니다!' })
+      } else {
+        setToast({ type: 'info', message: '이메일 인증 후 로그인해주세요.' })
+      }
     } catch (error: unknown) {
-      const code = (error as any)?.response?.data?.error?.code
+      const msg = (error as any)?.message ?? ''
       setToast({
         type: 'error',
-        message: code === 'AUTH_EMAIL_ALREADY_EXISTS'
+        message: msg.includes('already registered')
           ? '이미 사용 중인 이메일입니다.'
           : '회원가입 중 오류가 발생했습니다.',
       })
     } finally {
       setIsLoading(false)
     }
-  }, [validate, name, email, password, loginStore])
+  }, [validate, name, email, password, setSession])
 
   return (
     <SafeAreaView style={styles.safeArea}>

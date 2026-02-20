@@ -30,16 +30,23 @@ const ProfileScreen: React.FC = memo(() => {
   const { profile, setProfile } = useProfileStore()
   const clearProfile = useProfileStore((s) => s.clearProfile)
 
-  const [notifSettings, setNotifSettings] = useState({ checkinReminderEnabled: true, marketValueAlertEnabled: true, peerRequestEnabled: true })
+  // Supabase 스키마 필드명: checkin_reminder, market_value_update, peer_verification_request
+  const [notifSettings, setNotifSettings] = useState({ checkin_reminder: true, market_value_update: true, peer_verification_request: true })
   const [isLoading, setIsLoading] = useState(true)
   const [toast, setToast] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null)
 
   useEffect(() => {
     Promise.all([getProfile(), getSettings()])
-      .then(([p, s]) => {
-        setProfile(p as any)
-        const settings = s as any
-        setNotifSettings({ checkinReminderEnabled: settings.checkinReminderEnabled, marketValueAlertEnabled: settings.marketValueAlertEnabled, peerRequestEnabled: settings.peerRequestEnabled })
+      .then(([profileRes, settingsRes]) => {
+        if (profileRes.data) setProfile(profileRes.data as any)
+        if (settingsRes.data) {
+          const s = settingsRes.data as any
+          setNotifSettings({
+            checkin_reminder: s.checkin_reminder ?? true,
+            market_value_update: s.market_value_update ?? true,
+            peer_verification_request: s.peer_verification_request ?? true,
+          })
+        }
       })
       .catch(() => setToast({ type: 'error', message: '프로필을 불러오지 못했습니다.' }))
       .finally(() => setIsLoading(false))
@@ -79,30 +86,32 @@ const ProfileScreen: React.FC = memo(() => {
           <Card variant="default" style={styles.profileCard}>
             <View style={styles.avatarRow}>
               <View style={styles.avatar}>
-                <Text style={styles.avatarText}>{user?.name?.charAt(0)?.toUpperCase() ?? 'U'}</Text>
+                <Text style={styles.avatarText}>{(user?.user_metadata?.full_name ?? user?.email ?? 'U').charAt(0).toUpperCase()}</Text>
               </View>
               <View style={styles.profileInfo}>
-                <Text style={styles.name}>{user?.name}</Text>
+                <Text style={styles.name}>{user?.user_metadata?.full_name ?? user?.email?.split('@')[0]}</Text>
                 <Text style={styles.email}>{user?.email}</Text>
-                {profile?.jobTitle && <Text style={styles.job}>{profile.jobTitle}{profile.companyName ? ` · ${profile.companyName}` : ''}</Text>}
+                {(profile as any)?.job_title && <Text style={styles.job}>{(profile as any).job_title}{(profile as any).company ? ` · ${(profile as any).company}` : ''}</Text>}
               </View>
             </View>
             <View style={styles.metaRow}>
-              {(profile?.yearsOfExperience ?? 0) > 0 && <Badge variant="primary" label={`경력 ${profile!.yearsOfExperience}년`} />}
-              {profile?.isJobSeeking && <Badge variant="success" label="구직 중" />}
+              {((profile as any)?.years_of_exp ?? 0) > 0 && <Badge variant="primary" label={`경력 ${(profile as any).years_of_exp}년`} />}
             </View>
             <View style={styles.completionWrap}>
-              <ProfileCompletionBar score={profile?.completionScore ?? 0} compact />
+              <ProfileCompletionBar score={(profile as any)?.completeness ?? 0} compact />
             </View>
           </Card>
         )}
 
         {/* 스킬 */}
-        {!isLoading && profile?.skills && profile.skills.length > 0 && (
+        {/* profile_skills: [{ id, level, skills: { id, name } }] */}
+        {!isLoading && (profile as any)?.profile_skills?.length > 0 && (
           <Card variant="outlined" style={styles.card}>
             <Text style={styles.sectionTitle}>보유 스킬</Text>
             <View style={styles.skillTags}>
-              {(profile.skills as any[]).map((s: any) => <Badge key={s.id ?? s.skillId} variant="gray" label={s.skillName ?? s.name ?? '스킬'} />)}
+              {((profile as any).profile_skills as any[]).map((ps: any) => (
+                <Badge key={ps.id} variant="gray" label={ps.skills?.name ?? '스킬'} />
+              ))}
             </View>
           </Card>
         )}
@@ -111,9 +120,9 @@ const ProfileScreen: React.FC = memo(() => {
         <Card variant="default" style={styles.card}>
           <Text style={styles.sectionTitle}>알림 설정</Text>
           {[
-            { key: 'checkinReminderEnabled' as const, icon: 'calendar-outline', label: '분기 체크인 알림' },
-            { key: 'marketValueAlertEnabled' as const, icon: 'trending-up-outline', label: '마켓 밸류 업데이트' },
-            { key: 'peerRequestEnabled' as const, icon: 'people-outline', label: '동료 인증 요청' },
+            { key: 'checkin_reminder' as const, icon: 'calendar-outline', label: '분기 체크인 알림' },
+            { key: 'market_value_update' as const, icon: 'trending-up-outline', label: '마켓 밸류 업데이트' },
+            { key: 'peer_verification_request' as const, icon: 'people-outline', label: '동료 인증 요청' },
           ].map(({ key, icon, label }) => (
             <View key={key} style={styles.settingRow}>
               <View style={styles.settingLeft}>

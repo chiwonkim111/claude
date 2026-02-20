@@ -1,28 +1,28 @@
 /**
  * 프로필 상태 스토어 (Zustand)
+ * - Supabase schema 필드명 기준으로 정렬 (uuid → string)
  */
 import { create } from 'zustand'
 
-interface Skill {
-  id: number
-  name: string
-  proficiencyLevel: string
-}
-
+/** Supabase profiles 테이블 컬럼 기준 */
 interface Profile {
-  id: number
-  userId: number
-  jobTitle: string | null
-  jobCategory: string | null
-  yearsOfExperience: number
-  companyName: string | null
+  id: string
+  user_id: string
+  display_name: string | null
+  job_title: string | null
+  company: string | null
+  years_of_exp: number
   bio: string | null
-  isJobSeeking: boolean
-  completionScore: number
-  marketValueMin: number | null
-  marketValueMax: number | null
-  hireProbability: number | null
-  skills?: Skill[]
+  avatar_url: string | null
+  completeness: number
+  created_at: string
+  updated_at: string
+  // profile_skills 조인 결과 (선택적)
+  profile_skills?: Array<{
+    id: string
+    level: number | null
+    skills: { id: string; name: string; category: string | null } | null
+  }>
 }
 
 interface ProfileState {

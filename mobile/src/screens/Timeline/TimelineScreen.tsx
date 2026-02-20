@@ -37,8 +37,9 @@ const TimelineScreen: React.FC = memo(() => {
 
   const loadAchievements = useCallback(async () => {
     try {
-      const data = await getAchievements()
-      setAchievements(data as any[])
+      const { data, error } = await getAchievements()
+      if (error) throw error
+      setAchievements(data ?? [])
     } catch {
       setToast({ type: 'error', message: '성과 목록을 불러오지 못했습니다.' })
     } finally {
@@ -55,9 +56,10 @@ const TimelineScreen: React.FC = memo(() => {
   }, [loadAchievements])
 
   // 필터 적용
+  // Supabase 스키마 필드명: is_verified
   const filtered = achievements.filter((a) => {
-    if (activeFilter === 'verified') return a.isVerified
-    if (activeFilter === 'pending') return !a.isVerified
+    if (activeFilter === 'verified') return a.is_verified
+    if (activeFilter === 'pending') return !a.is_verified
     return true
   })
 

@@ -37,7 +37,7 @@ const CheckinScreen: React.FC = memo(() => {
   const [isLoading, setIsLoading] = useState(true)
   const [isCompleting, setIsCompleting] = useState(false)
   const [toast, setToast] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null)
-  const saveTimers = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map())
+  const saveTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
 
   // 진행률 계산
   const answeredCount = questions.filter((q) => q.answer && q.answer.trim().length > 0).length
@@ -53,12 +53,20 @@ const CheckinScreen: React.FC = memo(() => {
     width: `${Math.round(progressWidth.value * 100)}%` as any,
   }))
 
-  // 질문 로드
+  // 질문 로드 — Supabase 응답에서 data 추출
   useEffect(() => {
-    getQuestions(sessionId)
-      .then((data) => setQuestions(data as any[]))
-      .catch(() => setToast({ type: 'error', message: '질문을 불러오지 못했습니다.' }))
-      .finally(() => setIsLoading(false))
+    const load = async () => {
+      try {
+        const { data, error } = await getQuestions(sessionId)
+        if (error) throw error
+        setQuestions((data ?? []) as any[])
+      } catch {
+        setToast({ type: 'error', message: '질문을 불러오지 못했습니다.' })
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    load()
   }, [sessionId, setQuestions])
 
   // 언마운트 시 타이머 정리
@@ -67,18 +75,17 @@ const CheckinScreen: React.FC = memo(() => {
     return () => { timers.forEach((t) => clearTimeout(t)) }
   }, [])
 
-  const handleAnswerChange = useCallback((questionId: number, text: string) => {
+  const handleAnswerChange = useCallback((questionId: string, text: string) => {
     updateAnswer(questionId, text)
     // 800ms 디바운스 자동 저장
     const prev = saveTimers.current.get(questionId)
     if (prev) clearTimeout(prev)
-    const timer = setTimeout(() => {
-      saveAnswer(sessionId, questionId, text).catch(() => {
-        setToast({ type: 'error', message: '답변 저장에 실패했습니다.' })
-      })
+    const timer = setTimeout(async () => {
+      const { error } = await saveAnswer(questionId, text)
+      if (error) setToast({ type: 'error', message: '답변 저장에 실패했습니다.' })
     }, 800)
     saveTimers.current.set(questionId, timer)
-  }, [sessionId, updateAnswer])
+  }, [updateAnswer])
 
   const handleComplete = useCallback(async () => {
     if (answeredCount < totalCount) {

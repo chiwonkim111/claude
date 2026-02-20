@@ -8,16 +8,17 @@ import { View, Text, TextInput, StyleSheet } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { colors, typography, spacing, borderRadius, shadows } from '@/styles/tokens'
 
+/** Supabase checkin_questions 컬럼 기준 */
 interface Question {
-  id: number
-  order: number
-  text: string
+  id: string
+  seq: number       // 질문 순서 (1~4)
+  question: string  // 질문 텍스트
   answer: string | null
 }
 
 interface QuestionCardProps {
   question: Question
-  onAnswerChange: (id: number, text: string) => void
+  onAnswerChange: (id: string, text: string) => void
 }
 
 const QuestionCard = memo<QuestionCardProps>(({ question, onAnswerChange }) => {
@@ -36,10 +37,10 @@ const QuestionCard = memo<QuestionCardProps>(({ question, onAnswerChange }) => {
           {isAnswered ? (
             <Ionicons name="checkmark" size={14} color={colors.white} />
           ) : (
-            <Text style={styles.orderText}>Q{question.order}</Text>
+            <Text style={styles.orderText}>Q{question.seq}</Text>
           )}
         </View>
-        <Text style={styles.questionText}>{question.text}</Text>
+        <Text style={styles.questionText}>{question.question}</Text>
       </View>
 
       {/* 답변 입력 */}
@@ -52,8 +53,8 @@ const QuestionCard = memo<QuestionCardProps>(({ question, onAnswerChange }) => {
         multiline
         numberOfLines={4}
         textAlignVertical="top"
-        accessibilityLabel={`${question.order}번 질문 답변 입력`}
-        accessibilityHint={question.text}
+        accessibilityLabel={`${question.seq}번 질문 답변 입력`}
+        accessibilityHint={question.question}
       />
     </View>
   )

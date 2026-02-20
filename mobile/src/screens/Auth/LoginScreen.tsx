@@ -35,7 +35,7 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 const LoginScreen: React.FC = () => {
   const navigation = useNavigation<LoginNav>()
-  const loginStore = useAuthStore((s) => s.login)
+  const setSession = useAuthStore((s) => s.setSession)
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -65,20 +65,21 @@ const LoginScreen: React.FC = () => {
     if (!validate()) return
     setIsLoading(true)
     try {
-      const res = await login({ email, password }) as any
-      await loginStore(res.data.user, res.data.accessToken)
+      const { data, error } = await login({ email, password })
+      if (error) throw error
+      if (data.session) setSession(data.session)
     } catch (error: unknown) {
-      const code = (error as any)?.response?.data?.error?.code
+      const msg = (error as any)?.message ?? ''
       setToast({
         type: 'error',
-        message: code === 'AUTH_INVALID_CREDENTIALS'
+        message: msg.includes('Invalid login credentials')
           ? '이메일 또는 비밀번호가 올바르지 않습니다.'
           : '로그인 중 오류가 발생했습니다.',
       })
     } finally {
       setIsLoading(false)
     }
-  }, [validate, email, password, loginStore])
+  }, [validate, email, password, setSession])
 
   return (
     <SafeAreaView style={styles.safeArea}>

@@ -2,18 +2,30 @@
  * 디자인 토큰
  * - 색상, 타이포그래피, 간격, 테두리 반경, 그림자 전체 중앙 관리
  * - 모든 컴포넌트에서 이 토큰을 참조하여 일관성 유지
+ * - Stitch 브랜드 팔레트 적용 (2026-02-20)
  */
 
-/** 색상 팔레트 — 인디고/보라 계열 Primary */
+/**
+ * 색상 팔레트 — Stitch 브랜드 컬러
+ * - Primary: Midnight Void (절대적인 검정)
+ * - Accent: Ignition Orange (열정과 커리어 성장)
+ * - Surface: Silent Ash (여백 있는 배경)
+ */
 export const colors = {
-  // Primary (인디고)
-  primary: '#6366F1',
-  primaryDark: '#4F46E5',
-  primaryLight: '#A5B4FC',
-  primaryBg: '#EEF2FF',
+  // Primary — Midnight Void (검정)
+  primary: '#000000',
+  primaryDark: '#000000',
+  primaryLight: '#333333',
+  primaryBg: '#F4F4F4',
 
-  // Secondary (핑크)
-  secondary: '#EC4899',
+  // Accent — Ignition Orange (오렌지)
+  accent: '#FE5314',
+  accentDark: '#D94410',
+  accentLight: '#FF7A47',
+  accentBg: '#FFF1EC',
+
+  // Secondary (레거시 호환 유지)
+  secondary: '#FE5314',
 
   // 시멘틱 색상
   success: '#10B981',
@@ -28,22 +40,31 @@ export const colors = {
   // 그레이 스케일
   white: '#FFFFFF',
   gray50: '#F9FAFB',
-  gray100: '#F3F4F6',
-  gray200: '#E5E7EB',
-  gray300: '#D1D5DB',
-  gray400: '#9CA3AF',
-  gray500: '#6B7280',
-  gray600: '#4B5563',
-  gray700: '#374151',
-  gray900: '#111827',
+  gray100: '#F4F4F4',   // Silent Ash
+  gray200: '#E8E8E8',
+  gray300: '#D0D0D0',
+  gray400: '#999999',
+  gray500: '#6B6B6B',
+  gray600: '#4A4A4A',
+  gray700: '#2E2E2E',
+  gray900: '#1A1A1A',   // Deep Ink
 
   // 배경 및 텍스트
-  background: '#F9FAFB',
-  surface: '#FFFFFF',
-  textPrimary: '#111827',
-  textSecondary: '#6B7280',
-  textDisabled: '#9CA3AF',
-  border: '#E5E7EB',
+  background: '#F4F4F4',   // Silent Ash
+  surface: '#FFFFFF',       // Pure Canvas
+  card: '#FFFFFF',          // Pure Canvas
+  textPrimary: '#1A1A1A',  // Deep Ink
+  textSecondary: '#6B6B6B',
+  textDisabled: '#999999',
+  textInverse: '#FFFFFF',
+  border: '#E8E8E8',
+
+  // 추가 Stitch 토큰
+  midnight: '#000000',     // Midnight Void
+  ignition: '#FE5314',     // Ignition Orange
+  ash: '#F4F4F4',          // Silent Ash
+  canvas: '#FFFFFF',       // Pure Canvas
+  ink: '#1A1A1A',          // Deep Ink
 } as const
 
 /** 타이포그래피 */

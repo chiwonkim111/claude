@@ -12,6 +12,14 @@
 | 버전 | 날짜 | 변경 내용 |
 |------|------|----------|
 | v1.0 | 2026-02-19 | 최초 작성 (기획서 기반 PRD 변환) |
+| v1.1 | 2026-02-20 | UI 리디자인 — Stitch 브랜드 팔레트 적용, 상단 탭 전환, 프로필+타임라인 통합 |
+
+### UI 구현 현황 (2026-02-20)
+
+- [x] 디자인 토큰 — Stitch 브랜드 팔레트 적용 (`src/styles/tokens.ts`)
+- [x] 네비게이션 타입 수정 — Profile / MarketValue / Settings 3탭 구조 (`src/navigation/types.ts`)
+- [x] AppNavigator — 하단 탭 → 상단 Material Top Tab 전환 (`src/navigation/AppNavigator.tsx`)
+- [x] HomeScreen — 프로필 헤더 카드 + 스탯 바 + 체크인 CTA + 성과 타임라인 + 스킬 통합 (`src/screens/Home/HomeScreen.tsx`)
 
 ---
 
